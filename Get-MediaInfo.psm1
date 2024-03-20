@@ -1,231 +1,316 @@
+# ----------------------------------------------------- Functions -----------------------------------------------------
 
-$videoExtensions = '264', '265', 'asf', 'avc', 'avi', 'divx', 'flv', 'h264', 'h265', 'hevc', 'm2ts', 'm2v', 'm4v', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'mpv', 'mts', 'rar', 'ts', 'vob', 'webm', 'wmv'
-$audioExtensions = 'aac', 'ac3', 'dts', 'dtshd', 'dtshr', 'dtsma', 'eac3', 'flac', 'm4a', 'mka', 'mp2', 'mp3', 'mpa', 'ogg', 'opus', 'thd', 'w64', 'wav'
-$cacheVersion    = 45
-$culture         = [Globalization.CultureInfo]::InvariantCulture
-
-function ConvertStringToInt($value)
-{
-    try {
-        [int]::Parse($value, $culture)
-    } catch {
-        0
-    }
+function ConvertStringToDouble($Value) {
+	$Result = $null
+	if ([double]::TryParse($Value, [Globalization.CultureInfo]::InvariantCulture, [ref] $Result)) {
+		return $Result
+	} else {
+		return [double] 0.0
+	}
 }
 
-function ConvertStringToDouble($value)
-{
-    try {
-        [double]::Parse($value, $culture)
-    } catch {
-        0.0
-    }
+function ConvertStringToLong($Value) {
+	$Result = $null
+	if ([long]::TryParse($Value, [Globalization.CultureInfo]::InvariantCulture, [ref] $Result)) {
+		return $Result
+	} else {
+		return [long] 0
+	}
 }
 
-function ConvertStringToLong($value)
-{
-    try {
-        [long]::Parse($value, $culture)
-    } catch {
-        [long]0
-    }
+function ConvertStringToInt($Value) {
+	$Result = $null
+	if ([int]::TryParse($Value, [Globalization.CultureInfo]::InvariantCulture, [ref] $Result)) {
+		return $Result
+	} else {
+		return [int] 0
+	}
 }
 
-function Get-MediaInfo
-{
-    [CmdletBinding()]
-    [Alias('gmi')]
-    Param(
-        [parameter(ValueFromPipelineByPropertyName)]
-        [Alias('FullName')]
-        [string[]] $Path,
+# ------------------------------------------------------ Exports ------------------------------------------------------
 
-        [Switch]$Video,
-        [Switch]$Audio
-    )
+function Get-MediaInfo {
+	[CmdletBinding()]
+	[Alias('gmi')]
+	param(
+		[Parameter(ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
+		[Alias('FullName', 'Name')]
+		[string[]] $Path,
 
-    begin
-    {
-        Add-Type -Path ($PSScriptRoot + '\MediaInfoSharp.dll')
-    }
+		[switch] $Video,
 
-    Process
-    {
-        foreach ($file in $Path)
-        {
-            $file = Convert-Path -LiteralPath $file
+		[switch] $Audio,
 
-            if (-not (Test-Path -LiteralPath $file -PathType Leaf))
-            {
-                continue
-            }
+		[switch] $ConvertValues,
 
-            $extension = [IO.Path]::GetExtension($file).TrimStart([char]'.')
-            $chacheFileBase = $file + '-' + (Get-Item -LiteralPath $file).Length + '-' + $cacheVersion
+		[switch] $WriteCache,
 
-            foreach ($char in [IO.Path]::GetInvalidFileNameChars())
-            {
-                if ($chacheFileBase.Contains($char))
-                {
-                    $chacheFileBase = $chacheFileBase.Replace($char.ToString(), '-' + [int]$char + '-')
-                }
-            }
+		[switch] $SkipCache
+	)
 
-            $cacheFile = Join-Path ([IO.Path]::GetTempPath()) ($chacheFileBase + '.json')
+	begin {
+		$CacheRoot = Join-Path ([IO.Path]::GetTempPath()) 'Get-MediaInfo-Cache'
 
-            if (-not $Video -and -not $Audio)
-            {
-                if ($videoExtensions -contains $extension)
-                {
-                    $Video = $true
-                }
-                elseif ($audioExtensions -contains $extension)
-                {
-                    $Audio = $true
-                }
-            }
+		if ($WriteCache) {
+			if (-not [IO.Directory]::Exists($CacheRoot)) {
+				[Void][IO.Directory]::CreateDirectory($CacheRoot)
+			}
+		}
 
-            if ($Video -and $videoExtensions -contains $extension)
-            {
-                if (Test-Path -LiteralPath $cacheFile)
-                {
-                    Get-Content -LiteralPath $cacheFile -Raw | ConvertFrom-Json
-                }
-                else
-                {
-                    $mi = New-Object MediaInfoSharp -ArgumentList $file
+		Add-Type -Path ($PSScriptRoot + '\MediaInfoSharp.dll')
 
-                    $format = $mi.GetInfo('Video', 0, 'Format')
+		$VideoExtensions =
+		'264', '265', 'asf', 'avc', 'avi', 'divx', 'flv', 'h264', 'h265', 'hevc', 'm2ts', 'm2v', 'm4v', 'mkv', 'mov', 'mp4',
+		'mpeg', 'mpg', 'mpv', 'mts', 'ogv', 'ts', 'vob', 'webm', 'wmv', 'mpg2', 'mpeg2'
+		$AudioExtensions =
+		'aac', 'ac3', 'dts', 'dtshd', 'dtshr', 'dtsma', 'eac3', 'flac', 'm4a', 'mka', 'mp2', 'mp3', 'mpa', 'ogg', 'opus', 'thd', 'w64', 'wav', 'oga'
+	}
 
-                    if ($format -eq 'MPEG Video')
-                    {
-                        $format = 'MPEG'
-                    }
+	process {
+		$Path = foreach ($p in $Path) { if ($p) { $p } }
 
-                    $obj = [PSCustomObject]@{
-                        FileName       = [IO.Path]::GetFileName($file)
-                        Ext            = $extension
-                        Format         = $format
-                        DAR            = ConvertStringToDouble $mi.GetInfo('Video', 0, 'DisplayAspectRatio')
-                        Width          = ConvertStringToInt $mi.GetInfo('Video', 0, 'Width')
-                        Height         = ConvertStringToInt $mi.GetInfo('Video', 0, 'Height')
-                        BitRate        = (ConvertStringToInt $mi.GetInfo('Video', 0, 'BitRate')) / 1000
-                        Duration       = (ConvertStringToDouble $mi.GetInfo('General', 0, 'Duration')) / 60000
-                        FileSize       = (ConvertStringToLong $mi.GetInfo('General', 0, 'FileSize')) / 1024 / 1024
-                        FrameRate      = ConvertStringToDouble $mi.GetInfo('Video', 0, 'FrameRate')
-                        AudioCodec     = $mi.GetInfo('General', 0, 'Audio_Codec_List')
-                        TextFormat     = $mi.GetInfo('General', 0, 'Text_Format_List')
-                        ScanType       = $mi.GetInfo('Video',   0, 'ScanType')
-                        Range          = $mi.GetInfo('Video',   0, 'colour_range')
-                        Primaries      = $mi.GetInfo('Video',   0, 'colour_primaries')
-                        Transfer       = $mi.GetInfo('Video',   0, 'transfer_characteristics')
-                        Matrix         = $mi.GetInfo('Video',   0, 'matrix_coefficients')
-                        FormatProfile  = $mi.GetInfo('Video',   0, 'Format_Profile')
-                        Directory      = [IO.Path]::GetDirectoryName($file)
-                    }
+		if ([String]::IsNullOrWhiteSpace($Path)) {
+			Write-Output ("`e[90m[`e[97mGet-MediaInfo`e[90m][`e[33mInfo`e[90m]`e[0m : No value provided for the parameter `e[32mPath`e[0m. Please specify the path" +
+				"to one (or more) files!")
+			return
+		} elseif ([WildcardPattern]::ContainsWildcardCharacters($Path)) {
+			$FileSet = Get-ChildItem -Path $Path -File -ErrorAction Ignore
+		} else {
+			$FileSet = $Path
+		}
 
-                    $mi.Dispose()
-                    $obj | ConvertTo-Json | Out-File -LiteralPath $cacheFile -Encoding UTF8
-                    $obj
-                }
-            }
-            elseif ($Audio -and $audioExtensions -contains $extension)
-            {
-                if (Test-Path -LiteralPath $cacheFile)
-                {
-                    Get-Content -LiteralPath $cacheFile -Raw | ConvertFrom-Json
-                }
-                else
-                {
-                    $mi = New-Object MediaInfoSharp -ArgumentList $file
+		foreach ($Entry in $FileSet) {
+			$Realpath = Convert-Path -LiteralPath $Entry -ErrorAction Ignore
+			if (-not [IO.File]::Exists($Realpath)) {
+				Write-Output "`e[90m[`e[97mGet-MediaInfo`e[90m][`e[31mError`e[90m]`e[0m : Invalid path argument given: `e[90m'`e[94m$Entry`e[90m'`e[0m does not exist as a file!"
+				continue
+			}
 
-                    $obj = [PSCustomObject]@{
-                        FileName    = [IO.Path]::GetFileName($file)
-                        Ext         = $extension
-                        Format      = $mi.GetInfo('Audio',   0, 'Format')
-                        Performer   = $mi.GetInfo('General', 0, 'Performer')
-                        Track       = $mi.GetInfo('General', 0, 'Track')
-                        Album       = $mi.GetInfo('General', 0, 'Album')
-                        Year        = $mi.GetInfo('General', 0, 'Recorded_Date')
-                        Genre       = $mi.GetInfo('General', 0, 'Genre')
-                        Duration    = (ConvertStringToDouble $mi.GetInfo('General', 0, 'Duration')) / 60000
-                        BitRate     = (ConvertStringToInt $mi.GetInfo('Audio', 0, 'BitRate')) / 1000
-                        FileSize    = (ConvertStringToLong $mi.GetInfo('General', 0, 'FileSize')) / 1024 / 1024
-                        Directory   = [IO.Path]::GetDirectoryName($file)
-                    }
+			$Extension = [IO.Path]::GetExtension($Realpath).TrimStart([char]'.')
 
-                    $mi.Dispose()
-                    $obj | ConvertTo-Json | Out-File -LiteralPath $cacheFile -Encoding UTF8
-                    $obj
-                }
-            }
-        }
-    }
+			$CacheFileBase = $Realpath + '_' + (Get-Item -LiteralPath $Realpath).Length
+			foreach ($Char in [IO.Path]::GetInvalidFileNameChars()) {
+				if ($CacheFileBase.Contains($Char)) {
+					$CacheFileBase = $CacheFileBase.Replace($Char.ToString(), '_')
+				}
+			}
+			$CacheFile = Join-Path $CacheRoot ($CacheFileBase + '.json')
+
+			if (!$Video -and !$Audio) {
+				if ($Extension -in $VideoExtensions) {
+					$Video = $true
+				} elseif ($Extension -in $AudioExtensions) {
+					$Audio = $true
+				}
+			}
+
+			if ($Video) {
+				if ([IO.File]::Exists($CacheFile) -and !$SkipCache) {
+					Get-Content -LiteralPath $CacheFile -Raw | ConvertFrom-Json
+				} else {
+					$MediaInfo = [MediaInfoSharp]::new($Realpath)
+
+					$VideoFormat = $MediaInfo.GetInfo('Video', 0, 'Format/String')
+					$Container = $MediaInfo.GetInfo('General', 0, 'Format/String')
+
+					if ([String]::Empty -eq $MediaInfo.GetInfo('Video', 0, 'BitRate')) {
+						$BitrateKind = 'General'
+						$BitrateParam = 'OverallBitRate'
+					} else {
+						$BitrateKind = 'Video'
+						$BitrateParam = 'BitRate'
+					}
+
+					if ($ConvertValues) {
+						$Output = [pscustomobject]@{
+							Filename        = [IO.Path]::GetFileName($Realpath)
+							Type            = $Extension.ToUpperInvariant()
+							Duration        = (ConvertStringToDouble $MediaInfo.GetInfo('General', 0, 'Duration')) / 60000
+							Filesize        = (ConvertStringToLong $MediaInfo.GetInfo('General', 0, 'FileSize')) / 1mb
+							ContainerFormat = $Container
+							VideoCodec      = $VideoFormat
+							Width           = ConvertStringToInt $MediaInfo.GetInfo('Video', 0, 'Width')
+							Height          = ConvertStringToInt $MediaInfo.GetInfo('Video', 0, 'Height')
+							FrameRateMode   = $MediaInfo.GetInfo('Video', 0, 'FrameRate_Mode')
+							Framerate       = ConvertStringToDouble $MediaInfo.GetInfo('Video', 0, 'FrameRate')
+							VideoBitrate    = (ConvertStringToInt $MediaInfo.GetInfo($BitrateKind, 0, $BitrateParam)) / 1000
+							DAR             = ConvertStringToDouble $MediaInfo.GetInfo('Video', 0, 'DisplayAspectRatio')
+							FormatProfile   = $MediaInfo.GetInfo('Video', 0, 'Format_Profile')
+							ScanType        = $MediaInfo.GetInfo('Video', 0, 'ScanType')
+							Colorspace      = $MediaInfo.GetInfo('Video', 0, 'ColorSpace')
+							Range           = $MediaInfo.GetInfo('Video', 0, 'colour_range')
+							Primaries       = $MediaInfo.GetInfo('Video', 0, 'colour_primaries')
+							Transfer        = $MediaInfo.GetInfo('Video', 0, 'transfer_characteristics')
+							Matrix          = $MediaInfo.GetInfo('Video', 0, 'matrix_coefficients')
+							AudioCodec      = $MediaInfo.GetInfo('General', 0, 'Audio_Codec_List')
+							TextFormat      = $MediaInfo.GetInfo('General', 0, 'Text_Format_List')
+							Directory       = [IO.Path]::GetDirectoryName($Realpath)
+						}
+					} else {
+						$Output = [pscustomobject]@{
+							Filename        = [IO.Path]::GetFileName($Realpath)
+							Type            = $Extension.ToUpperInvariant()
+							Duration        = $MediaInfo.GetInfo('General', 0, 'Duration/String1')
+							Filesize        = $MediaInfo.GetInfo('General', 0, 'FileSize/String4')
+							ContainerFormat = $Container
+							VideoCodec      = $VideoFormat
+							Width           = $MediaInfo.GetInfo('Video', 0, 'Width')
+							Height          = $MediaInfo.GetInfo('Video', 0, 'Height')
+							FrameRateMode   = $MediaInfo.GetInfo('Video', 0, 'FrameRate_Mode')
+							Framerate       = $MediaInfo.GetInfo('Video', 0, 'FrameRate/String')
+							VideoBitrate    = $MediaInfo.GetInfo($BitrateKind, 0, "${BitrateParam}/String")
+							DAR             = $MediaInfo.GetInfo('Video', 0, 'DisplayAspectRatio/String')
+							FormatProfile   = $MediaInfo.GetInfo('Video', 0, 'Format_Profile')
+							ScanType        = $MediaInfo.GetInfo('Video', 0, 'ScanType')
+							Colorspace      = $MediaInfo.GetInfo('Video', 0, 'ColorSpace')
+							Range           = $MediaInfo.GetInfo('Video', 0, 'colour_range')
+							Primaries       = $MediaInfo.GetInfo('Video', 0, 'colour_primaries')
+							Transfer        = $MediaInfo.GetInfo('Video', 0, 'transfer_characteristics')
+							Matrix          = $MediaInfo.GetInfo('Video', 0, 'matrix_coefficients')
+							AudioCodec      = $MediaInfo.GetInfo('General', 0, 'Audio_Codec_List')
+							TextFormat      = $MediaInfo.GetInfo('General', 0, 'Text_Format_List')
+							Directory       = [IO.Path]::GetDirectoryName($Realpath)
+						}
+					}
+
+					$MediaInfo.Dispose()
+					if ($WriteCache) {
+						$Output | ConvertTo-Json | Out-File -LiteralPath $CacheFile -Encoding UTF8
+					}
+					Write-Output $Output
+				}
+			} elseif ($Audio) {
+				if ([IO.File]::Exists($CacheFile) -and !$SkipCache) {
+					Get-Content -LiteralPath $CacheFile -Raw | ConvertFrom-Json
+				} else {
+					$MediaInfo = [MediaInfoSharp]::new($Realpath)
+
+					if ($ConvertValues) {
+						$Output = [pscustomobject]@{
+							Filename    = [IO.Path]::GetFileName($Realpath)
+							Type        = $Extension.ToUpperInvariant()
+							Format      = $MediaInfo.GetInfo('Audio', 0, 'Format')
+							Performer   = $MediaInfo.GetInfo('General', 0, 'Performer')
+							Track       = $MediaInfo.GetInfo('General', 0, 'Track')
+							Album       = $MediaInfo.GetInfo('General', 0, 'Album')
+							Year        = $MediaInfo.GetInfo('General', 0, 'Recorded_Date')
+							Genre       = $MediaInfo.GetInfo('General', 0, 'Genre')
+							Duration    = (ConvertStringToDouble $MediaInfo.GetInfo('General', 0, 'Duration')) / 60000
+							Bitrate     = (ConvertStringToInt $MediaInfo.GetInfo('Audio', 0, 'BitRate')) / 1000
+							BitrateMode = $MediaInfo.GetInfo('Audio', 0, 'BitRate_Mode')
+							Filesize    = (ConvertStringToLong $MediaInfo.GetInfo('General', 0, 'FileSize')) / 1mb
+							Directory   = [IO.Path]::GetDirectoryName($Realpath)
+						}
+					} else {
+						$Output = [pscustomobject]@{
+							Filename    = [IO.Path]::GetFileName($Realpath)
+							Type        = $Extension.ToUpperInvariant()
+							Format      = $MediaInfo.GetInfo('Audio', 0, 'Format')
+							Performer   = $MediaInfo.GetInfo('General', 0, 'Performer')
+							Track       = $MediaInfo.GetInfo('General', 0, 'Track')
+							Album       = $MediaInfo.GetInfo('General', 0, 'Album')
+							Year        = $MediaInfo.GetInfo('General', 0, 'Recorded_Date')
+							Genre       = $MediaInfo.GetInfo('General', 0, 'Genre')
+							Duration    = $MediaInfo.GetInfo('General', 0, 'Duration/String1')
+							Bitrate     = $MediaInfo.GetInfo('Audio', 0, 'BitRate/String')
+							BitrateMode = $MediaInfo.GetInfo('Audio', 0, 'BitRate_Mode')
+							Filesize    = $MediaInfo.GetInfo('General', 0, 'FileSize/String4')
+							Directory   = [IO.Path]::GetDirectoryName($Realpath)
+						}
+					}
+
+					$MediaInfo.Dispose()
+					if ($WriteCache) {
+						$Output | ConvertTo-Json | Out-File -LiteralPath $CacheFile -Encoding UTF8
+					}
+					Write-Output $Output
+				}
+			}
+		}
+	}
 }
 
-function Get-MediaInfoValue
-{
-    [CmdletBinding()]
-    [Alias('gmiv')]
-    Param(
-        [Parameter(
-            Mandatory=$true,
-            ValueFromPipeline=$true)]
-        [string] $Path,
+function Get-MediaInfoValue {
+	[CmdletBinding()]
+	[Alias('gmiv')]
+	param(
+		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+		[string] $Path,
 
-        [Parameter(Mandatory=$true)]
-        [ValidateSet('General', 'Video', 'Audio', 'Text', 'Image', 'Menu')]
-        [String] $Kind,
+		[Parameter(Mandatory = $true)]
+		[ValidateSet('General', 'Video', 'Audio', 'Text', 'Image', 'Menu')]
+		[string] $Kind,
 
-        [int] $Index,
+		[Parameter(Mandatory = $true)]
+		[string] $Parameter,
 
-        [Parameter(Mandatory=$true)]
-        [string] $Parameter
-    )
+		[int] $StreamIndex = 0
+	)
 
-    begin
-    {
-        Add-Type -Path ($PSScriptRoot + '\MediaInfoSharp.dll')
-    }
+	begin {
+		Add-Type -Path ($PSScriptRoot + '\MediaInfoSharp.dll')
+	}
 
-    Process
-    {
-        $mi = New-Object MediaInfoSharp -ArgumentList (Convert-Path -LiteralPath $Path)
-        $value = $mi.GetInfo($Kind, $Index, $Parameter)
-        $mi.Dispose()
-        return $value
-    }
+	process {
+		$Realpath = Convert-Path -LiteralPath $Path -ErrorAction Ignore
+		if ([IO.File]::Exists($Realpath)) {
+			$MediaInfo = [MediaInfoSharp]::new($Realpath)
+			$Value = $MediaInfo.GetInfo($Kind, $StreamIndex, $Parameter)
+			$MediaInfo.Dispose()
+			Write-Output $Value
+		} else {
+			Write-Output "`e[90m[`e[97mGet-MediaInfoValue`e[90m][`e[31mError`e[90m]`e[0m : Invalid path argument given: `e[90m'`e[94m$Path`e[90m'`e[0m is not a file!"
+		}
+	}
 }
 
-function Get-MediaInfoSummary
-{
-    [CmdletBinding()]
-    [Alias('gmis')]
-    Param(
-        [Parameter(
-            Mandatory = $true,
-            ValueFromPipeline = $true)]
-        [string] $Path,
+function Get-MediaInfoSummary {
+	[CmdletBinding()]
+	[Alias('gmis')]
+	param(
+		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+		[string] $Path,
 
-        [Parameter(Mandatory = $false)]
-        [Switch]
-        $Full,
+		[Parameter()]
+		[switch]
+		$Full,
 
-        [Parameter(Mandatory = $false)]
-        [Switch]
-        $Raw
-    )
+		[Parameter()]
+		[switch]
+		$Raw
+	)
 
-    begin
-    {
-        Add-Type -Path ($PSScriptRoot + '\MediaInfoSharp.dll')
-    }
+	begin {
+		Add-Type -Path ($PSScriptRoot + '\MediaInfoSharp.dll')
+	}
 
-    Process
-    {
-        $mi = New-Object MediaInfoSharp -ArgumentList (Convert-Path -LiteralPath $Path)
-        $value = $mi.GetSummary($Full, $Raw)
-        $mi.Dispose()
-        ("`r`n" + $value) -split "`r`n"
-    }
+	process {
+		$Realpath = Convert-Path -LiteralPath $Path -ErrorAction Ignore
+		if ([IO.File]::Exists($Realpath)) {
+			$MediaInfo = [MediaInfoSharp]::new($Realpath)
+			$Value = $MediaInfo.GetSummary($Full, $Raw)
+			$MediaInfo.Dispose()
+			Write-Output (("`r`n" + $Value) -split "`r`n")
+		} else {
+			Write-Output "`e[90m[`e[97mGet-MediaInfoSummary`e[90m][`e[31mError`e[90m]`e[0m : Invalid path argument given: `e[90m'`e[94m$Path`e[90m'`e[0m is not a file!"
+		}
+	}
+}
+
+function Clear-MediaInfoCache {
+	[CmdletBinding(SupportsShouldProcess)]
+	[Alias('clmic')]
+	param()
+	$CacheRoot = Join-Path ([IO.Path]::GetTempPath()) 'Get-MediaInfo-Cache'
+
+	if ([IO.Directory]::Exists($CacheRoot)) {
+		if ($PSCmdlet.ShouldProcess($CacheRoot, 'Remove MediaInfo Cache')) {
+			Remove-Item -LiteralPath $CacheRoot -Recurse -Force -ErrorAction Stop
+			Write-Output ("`e[90m[`e[97mClear-MediaInfoCache`e[90m][`e[32mSuccess`e[90m]`e[0m : The media info cache has been deleted from " +
+				"`e[90m'`e[97m$([IO.Path]::GetTempPath())`e[90m'`e[0m!")
+		}
+	} else {
+		Write-Output ("`e[90m[`e[97mClear-MediaInfoCache`e[90m][`e[94mInfo`e[90m]`e[0m : No media info cache has been found in " +
+			"`e[90m'`e[97m$([IO.Path]::GetTempPath())`e[90m'`e[0m!")
+	}
 }
