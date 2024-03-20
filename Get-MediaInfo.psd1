@@ -8,9 +8,9 @@
 	Description           = 'MediaInfo Integration Module for PowerShell'
 	PowerShellVersion     = '7.2'
 	ProcessorArchitecture = 'Amd64'
-	FunctionsToExport     = @()
+	FunctionsToExport     = @('Get-MediaInfo', 'Get-MediaInfoValue', 'Get-MediaInfoSummary', 'Clear-MediaInfoCache')
 	VariablesToExport     = @()
-	CmdletsToExport       = @('Get-MediaInfo', 'Get-MediaInfoValue', 'Get-MediaInfoSummary', 'Clear-MediaInfoCache')
+	CmdletsToExport       = @()
 	AliasesToExport       = @('gmi', 'gmiv', 'gmis', 'clmic')
 	PrivateData           = @{
 		PSData = @{
