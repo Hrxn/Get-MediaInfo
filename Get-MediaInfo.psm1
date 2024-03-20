@@ -1,4 +1,4 @@
-# ----------------------------------------------------- Functions -----------------------------------------------------
+# -------------------------------------------------- Local Functions --------------------------------------------------
 
 function ConvertStringToDouble($Value) {
 	$Result = $null
@@ -123,15 +123,15 @@ function Get-MediaInfo {
 
 					if ($ConvertValues) {
 						$Output = [pscustomobject]@{
-							Filename        = [IO.Path]::GetFileName($Realpath)
+							Name            = [IO.Path]::GetFileName($Realpath)
 							Type            = $Extension.ToUpperInvariant()
 							Duration        = (ConvertStringToDouble $MediaInfo.GetInfo('General', 0, 'Duration')) / 60000
-							Filesize        = (ConvertStringToLong $MediaInfo.GetInfo('General', 0, 'FileSize')) / 1mb
+							Size            = (ConvertStringToLong $MediaInfo.GetInfo('General', 0, 'FileSize')) / 1mb
 							ContainerFormat = $Container
 							VideoCodec      = $VideoFormat
 							Width           = ConvertStringToInt $MediaInfo.GetInfo('Video', 0, 'Width')
 							Height          = ConvertStringToInt $MediaInfo.GetInfo('Video', 0, 'Height')
-							FrameRateMode   = $MediaInfo.GetInfo('Video', 0, 'FrameRate_Mode')
+							FramerateMode   = $MediaInfo.GetInfo('Video', 0, 'FrameRate_Mode')
 							Framerate       = ConvertStringToDouble $MediaInfo.GetInfo('Video', 0, 'FrameRate')
 							VideoBitrate    = (ConvertStringToInt $MediaInfo.GetInfo($BitrateKind, 0, $BitrateParam)) / 1000
 							DAR             = ConvertStringToDouble $MediaInfo.GetInfo('Video', 0, 'DisplayAspectRatio')
@@ -148,15 +148,15 @@ function Get-MediaInfo {
 						}
 					} else {
 						$Output = [pscustomobject]@{
-							Filename        = [IO.Path]::GetFileName($Realpath)
+							Name            = [IO.Path]::GetFileName($Realpath)
 							Type            = $Extension.ToUpperInvariant()
 							Duration        = $MediaInfo.GetInfo('General', 0, 'Duration/String1')
-							Filesize        = $MediaInfo.GetInfo('General', 0, 'FileSize/String4')
+							Size            = $MediaInfo.GetInfo('General', 0, 'FileSize/String4')
 							ContainerFormat = $Container
 							VideoCodec      = $VideoFormat
 							Width           = $MediaInfo.GetInfo('Video', 0, 'Width')
 							Height          = $MediaInfo.GetInfo('Video', 0, 'Height')
-							FrameRateMode   = $MediaInfo.GetInfo('Video', 0, 'FrameRate_Mode')
+							FramerateMode   = $MediaInfo.GetInfo('Video', 0, 'FrameRate_Mode')
 							Framerate       = $MediaInfo.GetInfo('Video', 0, 'FrameRate/String')
 							VideoBitrate    = $MediaInfo.GetInfo($BitrateKind, 0, "${BitrateParam}/String")
 							DAR             = $MediaInfo.GetInfo('Video', 0, 'DisplayAspectRatio/String')
@@ -187,7 +187,7 @@ function Get-MediaInfo {
 
 					if ($ConvertValues) {
 						$Output = [pscustomobject]@{
-							Filename    = [IO.Path]::GetFileName($Realpath)
+							Name        = [IO.Path]::GetFileName($Realpath)
 							Type        = $Extension.ToUpperInvariant()
 							Format      = $MediaInfo.GetInfo('Audio', 0, 'Format')
 							Performer   = $MediaInfo.GetInfo('General', 0, 'Performer')
@@ -198,12 +198,12 @@ function Get-MediaInfo {
 							Duration    = (ConvertStringToDouble $MediaInfo.GetInfo('General', 0, 'Duration')) / 60000
 							Bitrate     = (ConvertStringToInt $MediaInfo.GetInfo('Audio', 0, 'BitRate')) / 1000
 							BitrateMode = $MediaInfo.GetInfo('Audio', 0, 'BitRate_Mode')
-							Filesize    = (ConvertStringToLong $MediaInfo.GetInfo('General', 0, 'FileSize')) / 1mb
+							Size        = (ConvertStringToLong $MediaInfo.GetInfo('General', 0, 'FileSize')) / 1mb
 							Directory   = [IO.Path]::GetDirectoryName($Realpath)
 						}
 					} else {
 						$Output = [pscustomobject]@{
-							Filename    = [IO.Path]::GetFileName($Realpath)
+							Name        = [IO.Path]::GetFileName($Realpath)
 							Type        = $Extension.ToUpperInvariant()
 							Format      = $MediaInfo.GetInfo('Audio', 0, 'Format')
 							Performer   = $MediaInfo.GetInfo('General', 0, 'Performer')
@@ -214,7 +214,7 @@ function Get-MediaInfo {
 							Duration    = $MediaInfo.GetInfo('General', 0, 'Duration/String1')
 							Bitrate     = $MediaInfo.GetInfo('Audio', 0, 'BitRate/String')
 							BitrateMode = $MediaInfo.GetInfo('Audio', 0, 'BitRate_Mode')
-							Filesize    = $MediaInfo.GetInfo('General', 0, 'FileSize/String4')
+							Size        = $MediaInfo.GetInfo('General', 0, 'FileSize/String4')
 							Directory   = [IO.Path]::GetDirectoryName($Realpath)
 						}
 					}

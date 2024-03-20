@@ -17,9 +17,9 @@ It consists of three functions:
 Installation
 ------------
 
-Installation or download via PowerShellGet:
-
-https://www.powershellgallery.com/packages/Get-MediaInfo
+1. Simply clone this repository or download the source archive file of this repository
+2. Place the files into one of PowerShell's automatic module paths (or import it manually, or via your `$PROFILE` file)
+  - Example: `~\Documents\PowerShell\Modules\Get-MediaInfo\3.8.0`
 
 
 Get-MediaInfo
