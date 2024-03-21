@@ -1,5 +1,5 @@
 Get-MediaInfo (Hrxn's fork)
-=============
+===========================
 
 Get-MediaInfo is a PowerShell MediaInfo solution.
 
@@ -27,7 +27,7 @@ Installation
 **Usage should be pretty self-explanatory anyway.**
 
 Get-MediaInfo
--------------
+=============
 
 Converts media file objects into MediaInfo objects.
 
@@ -104,7 +104,7 @@ MediaInfo objects.
 
 
 Get-MediaInfoValue
-------------------
+==================
 
 Returns specific properties from media files.
 
@@ -227,7 +227,7 @@ $mi.Dispose()
 ```
 
 Get-MediaInfoSummary
---------------------
+====================
 
 Shows a summary in text format for a media file.
 
@@ -287,11 +287,10 @@ A summary line by line as string array.
 
 
 Clear-MediaInfoCache
---------------------
+====================
 
 Description
 -----------
-
 Deletes the locally cached results created by `Get-MediaInfo $MyInput -WriteCache`.
 
 Input
