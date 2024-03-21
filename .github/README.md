@@ -3,11 +3,12 @@ Get-MediaInfo (Hrxn's fork)
 
 Get-MediaInfo is a PowerShell MediaInfo solution.
 
-It consists of three functions:
+It consists of four functions:
 
 - [Get-MediaInfo](#get-mediainfo)
 - [Get-MediaInfoValue](#get-mediainfovalue)
 - [Get-MediaInfoSummary](#get-mediainfosummary)
+- [Clear-MediaInfoCache](#clear-mediainfocache)
 
 ![-](Summary.jpg)
 
@@ -21,6 +22,9 @@ Installation
 2. Place the files into one of PowerShell's automatic module paths (or import it manually, or via your `$PROFILE` file)
     - Example: `~\Documents\PowerShell\Modules\Get-MediaInfo\3.8.0`
 
+##### Please Note
+** The documentation beyond this point still reflects the state of the original project and has not been ~~completely~~ updated yet. **  
+** Usage should be pretty self-explanatory anyway. **
 
 Get-MediaInfo
 -------------
@@ -100,7 +104,7 @@ MediaInfo objects.
 
 
 Get-MediaInfoValue
-==================
+------------------
 
 Returns specific properties from media files.
 
@@ -280,3 +284,22 @@ Output
 ------
 
 A summary line by line as string array.
+
+
+Clear-MediaInfoCache
+--------------------
+
+Description
+-----------
+
+Deletes the locally cached results created by `Get-MediaInfo $MyInput -WriteCache`.
+
+Input
+-----
+
+None.
+
+Output
+------
+
+None.

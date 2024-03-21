@@ -1,4 +1,4 @@
-# -------------------------------------------------- Local Functions --------------------------------------------------
+# -------------------------------------------------------------------------------- Local Functions --------------------------------------------------------------------------------
 
 function ConvertStringToDouble($Value) {
 	$Result = $null
@@ -27,7 +27,7 @@ function ConvertStringToInt($Value) {
 	}
 }
 
-# ------------------------------------------------------ Exports ------------------------------------------------------
+# ------------------------------------------------------------------------------------ Exports ------------------------------------------------------------------------------------
 
 function Get-MediaInfo {
 	[CmdletBinding()]
@@ -70,7 +70,7 @@ function Get-MediaInfo {
 		$Path = foreach ($p in $Path) { if ($p) { $p } }
 
 		if ([String]::IsNullOrWhiteSpace($Path)) {
-			Write-Output ("`e[90m[`e[97mGet-MediaInfo`e[90m][`e[33mInfo`e[90m]`e[0m : No value provided for the parameter `e[32mPath`e[0m. Please specify the path" +
+			Write-Output ("`e[90m[`e[97mGet-MediaInfo`e[90m][`e[33mInfo`e[90m]`e[0m : No value provided for the parameter '`e[32mPath`e[0m'. Please specify the path " +
 				"to one (or more) files!")
 			return
 		} elseif ([WildcardPattern]::ContainsWildcardCharacters($Path)) {
@@ -310,7 +310,7 @@ function Clear-MediaInfoCache {
 				"`e[90m'`e[97m$([IO.Path]::GetTempPath())`e[90m'`e[0m!")
 		}
 	} else {
-		Write-Output ("`e[90m[`e[97mClear-MediaInfoCache`e[90m][`e[94mInfo`e[90m]`e[0m : No media info cache has been found in " +
+		Write-Output ("`e[90m[`e[97mClear-MediaInfoCache`e[90m][`e[33mInfo`e[90m]`e[0m : No media info cache has been found in " +
 			"`e[90m'`e[97m$([IO.Path]::GetTempPath())`e[90m'`e[0m!")
 	}
 }
