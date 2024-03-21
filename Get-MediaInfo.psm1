@@ -71,7 +71,7 @@ function Get-MediaInfo {
 
 		if ([String]::IsNullOrWhiteSpace($Path)) {
 			Write-Output ("`e[90m[`e[97mGet-MediaInfo`e[90m][`e[33mInfo`e[90m]`e[0m : No value provided for the parameter '`e[32mPath`e[0m'. Please specify the path " +
-				"to one (or more) files!")
+				"to one (or more) media files!")
 			return
 		} elseif ([WildcardPattern]::ContainsWildcardCharacters($Path)) {
 			$FileSet = Get-ChildItem -Path $Path -File -ErrorAction Ignore
