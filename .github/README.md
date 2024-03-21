@@ -22,9 +22,9 @@ Installation
 2. Place the files into one of PowerShell's automatic module paths (or import it manually, or via your `$PROFILE` file)
     - Example: `~\Documents\PowerShell\Modules\Get-MediaInfo\3.8.0`
 
-##### Please Note
-** The documentation beyond this point still reflects the state of the original project and has not been ~~completely~~ updated yet. **  
-** Usage should be pretty self-explanatory anyway. **
+###### Please Note
+**The documentation beyond this point still reflects the state of the original project and has not been completely ~~updated~~ yet.**  
+**Usage should be pretty self-explanatory anyway.**
 
 Get-MediaInfo
 -------------
